@@ -12,7 +12,16 @@ func main() {
 	exampleNumber := os.Args[1]
 	password := os.Args[2]
 
-	dir, err := os.Open(exampleNumber)
+	key, _, err := enc.DeriveKey([]byte(password), []byte("sůl"))
+	if err != nil {
+		panic(err)
+	}
+
+	decryptAll(key, exampleNumber)
+}
+
+func decryptAll(key []byte, dirPath string) {
+	dir, err := os.Open(dirPath)
 	if err != nil {
 		panic(err)
 	}
@@ -20,13 +29,13 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	key, _, err := enc.DeriveKey([]byte(password), []byte("sůl"))
-	if err != nil {
-		panic(err)
-	}
 	for _, fileInfo := range files {
-		filePath := path.Join(exampleNumber, fileInfo.Name())
+		filePath := path.Join(dirPath, fileInfo.Name())
 		if filePath[len(filePath)-4:] != ".enc" {
+			continue
+		}
+		if fileInfo.IsDir() {
+			decryptAll(key, filePath)
 			continue
 		}
 		encryptedContent, err := ioutil.ReadFile(filePath)
